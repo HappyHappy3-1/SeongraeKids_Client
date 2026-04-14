@@ -1,0 +1,23 @@
+{
+  "name": "seongraekids_client",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HappyHappy3-1/SeongraeKids_Client.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/HappyHappy3-1/SeongraeKids_Client/issues"
+  },
+  "homepage": "https://github.com/HappyHappy3-1/SeongraeKids_Client#readme",
+  "devDependencies": {}
+
+}
