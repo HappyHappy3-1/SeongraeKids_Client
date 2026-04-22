@@ -25,14 +25,14 @@ const SIDEBAR_Y_OFFSETS: Record<string, number[]> = {
   '/classroom': [365, 456, 552, 646, 726],
 };
 
-export default function DashboardLayout({ activePath, sidebarTop, children }: {
-  activePath: string; sidebarTop: number; children: ReactNode;
+export default function DashboardLayout({ activePath, sidebarTop, children, fillWidth }: {
+  activePath: string; sidebarTop: number; children: ReactNode; fillWidth?: boolean;
 }) {
   const navigate = useNavigate();
   const yOffsets = SIDEBAR_Y_OFFSETS[activePath] ?? SIDEBAR_Y_OFFSETS['/home']!;
 
   return (
-    <ScaledPage>
+    <ScaledPage fillWidth={fillWidth}>
       <div className="relative w-full h-full bg-white">
         <HeaderBar />
         <div className="absolute bg-white rounded-[4px]"
