@@ -1,0 +1,330 @@
+/* ── 취업 의뢰 섹션 ── */
+.jobSection {
+  position: absolute;
+  left: 225px;
+  top: 204px;
+  width: 748px;
+  height: 444px;
+  background: #fff;
+  border-radius: 10px;
+}
+
+.tabBtn {
+  position: absolute;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  font-size: 16px;
+  transition: color 0.2s;
+}
+
+.tabBtnActive {
+  top: 231px;
+  left: 280px;
+  color: #000;
+}
+
+.tabBtnClosed {
+  top: 231px;
+  left: 549px;
+  color: #aaa;
+}
+
+.tabBtnActive.tabActive,
+.tabBtnClosed.tabActive {
+  color: #000;
+}
+
+.tabUnderline {
+  position: absolute;
+  top: 275px;
+  height: 7px;
+  border-radius: 3px;
+  transition: left 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+              width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 슬라이더 */
+.sliderWrap {
+  position: absolute;
+  left: 244px;
+  top: 301px;
+  width: 734px;
+  height: 340px;
+  overflow: hidden;
+}
+
+.sliderTrack {
+  display: flex;
+  transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* dot 인디케이터 */
+.dotsWrap {
+  position: absolute;
+  left: 460px;
+  top: 652px;
+  display: flex;
+  gap: 6px;
+}
+
+.dot {
+  height: 6px;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 3px;
+  transition: width 0.22s ease, background 0.22s ease;
+}
+
+/* 화살표 버튼 */
+.arrowBtn {
+  position: absolute;
+  width: 37px;
+  height: 37px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.arrowBtn:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: scale(1.08);
+}
+
+.arrowBtnLeft  { top: 447px; left: 234px; }
+.arrowBtnRight { top: 447px; left: 978px; }
+
+/* ── JobCard ── */
+.jobCard {
+  flex-shrink: 0;
+  height: 336px;
+  border-radius: 2px;
+  padding: 26px 21px;
+  box-sizing: border-box;
+  cursor: pointer;
+  color: #fff;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.jobCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+}
+
+.jobCardDday    { font-size: 10px; font-weight: 600; margin: 0; }
+.jobCardLabel   { font-size: 7px;  font-weight: 600; margin-top: 6px; margin-bottom: 0; }
+.jobCardCompany { font-size: 20px; font-weight: 700; margin-top: 1px; margin-bottom: 0; }
+.jobCardDivider { border-top: 1px solid rgba(255, 255, 255, 0.3); margin: 8px 0; }
+
+.jobCardSection        { margin-top: 8px; }
+.jobCardSectionLabel   { font-size: 7px; font-weight: 600; margin: 0; }
+.jobCardSectionContent {
+  font-size: 8px;
+  margin-top: 2px;
+  margin-bottom: 0;
+  color: #ccc;
+  white-space: pre-line;
+  line-height: 1.4;
+}
+.jobCardSectionContentBreak { word-break: break-all; }
+.jobCardMilitary { font-size: 7px; font-weight: 600; margin-top: 10px; margin-bottom: 0; }
+
+/* ── 공지사항 섹션 ── */
+.noticeSection {
+  position: absolute;
+  left: 245px;
+  top: 682px;
+  width: 769px;
+  height: 255px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0px 4px 5px rgba(0, 0, 0, 0.08);
+}
+
+.noticeTitle {
+  position: absolute;
+  left: 262px;
+  top: 695px;
+  font-size: 16px;
+}
+
+.noticeUnderlineThick {
+  position: absolute;
+  left: 256px;
+  top: 737px;
+  width: 86px;
+  height: 7px;
+  border-radius: 3px;
+}
+
+.noticeUnderlineThin {
+  position: absolute;
+  left: 256px;
+  top: 740px;
+  width: 741px;
+  height: 2px;
+}
+
+.noticeMoreBtn {
+  position: absolute;
+  left: 926px;
+  top: 714px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  font-size: 13px;
+  transition: color 0.15s;
+}
+
+.noticeRow {
+  position: absolute;
+  left: 251px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.noticeRow:hover { color: #FDCB35; }
+
+.noticeDate {
+  position: absolute;
+  left: 912px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ── 달력 섹션 ── */
+.calendarSection {
+  position: absolute;
+  left: 1034px;
+  top: 190px;
+  width: 370px;
+  height: 450px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0px 4px 5px rgba(0, 0, 0, 0.08);
+}
+
+.calendarHeader {
+  position: absolute;
+  left: 1068px;
+  top: 217px;
+  font-size: 16px;
+  font-weight: 700;
+  animation: fadeIn 0.2s ease;
+}
+
+.calendarSubDate {
+  position: absolute;
+  left: 1197px;
+  top: 239px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.calendarDayLabel {
+  position: absolute;
+  top: 268px;
+  width: 33px;
+  height: 33px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.calendarDayNum {
+  position: absolute;
+  top: 301px;
+  width: 33px;
+  height: 33px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50%;
+  font-size: 23px;
+  font-weight: 500;
+  color: #000;
+  transition: transform 0.15s;
+  z-index: 0;
+}
+
+.calendarDayNum:hover { transform: scale(1.18); }
+
+.calendarDayNumSelected {
+  color: #fff;
+  z-index: 1;
+}
+
+.calendarSelectedCircle {
+  position: absolute;
+  width: 29px;
+  height: 29px;
+  border-radius: 50%;
+  z-index: -1;
+}
+
+.calendarDivider {
+  position: absolute;
+  left: 1062px;
+  top: 352px;
+  width: 320px;
+  height: 2px;
+}
+
+/* ── 일정 목록 ── */
+.scheduleDot {
+  position: absolute;
+  left: 1065px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.scheduleLine {
+  position: absolute;
+  left: 1069px;
+  width: 2px;
+  height: 26px;
+}
+
+.scheduleLabel {
+  position: absolute;
+  left: 1092px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+/* ── 급식 섹션 (빈 칸) ── */
+.mealSection {
+  position: absolute;
+  left: 1034px;
+  top: 657px;
+  width: 370px;
+  height: 280px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0px 4px 5px rgba(0, 0, 0, 0.08);
+}
+
+/* ── 애니메이션 ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
