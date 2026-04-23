@@ -1,3 +1,4 @@
+import type { BackendRole } from '../constants';
 import { apiFetch } from './client';
 
 export interface AuthSession {
@@ -26,9 +27,21 @@ export function login(email: string, password: string) {
   });
 }
 
-export function signUp(email: string, password: string, name?: string) {
+export function signUp(
+  email: string,
+  password: string,
+  name?: string,
+  role?: BackendRole,
+) {
   return apiFetch<AuthResponse>('/auth/signup', {
     method: 'POST',
-    body: JSON.stringify({ email, password, name }),
+    body: JSON.stringify({ email, password, name, role }),
+  });
+}
+
+export function setMyRole(role: BackendRole) {
+  return apiFetch<{ role: BackendRole }>('/auth/me/role', {
+    method: 'POST',
+    body: JSON.stringify({ role }),
   });
 }

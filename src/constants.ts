@@ -31,6 +31,8 @@ export const DESIGN = { width: 1440, height: 1024 } as const;
 
 export type UserRole = 'teacher' | 'president' | 'vice_president' | 'student';
 
+export type BackendRole = 'student' | 'teacher' | 'homeroom_teacher';
+
 export const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: 'teacher', label: '선생님' },
   { value: 'president', label: '반장' },
@@ -44,3 +46,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   vice_president: '부반장',
   student: '학생',
 };
+
+export function toBackendRole(role: UserRole): BackendRole {
+  return role === 'teacher' ? 'teacher' : 'student';
+}

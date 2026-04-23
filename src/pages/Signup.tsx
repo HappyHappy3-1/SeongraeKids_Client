@@ -2,7 +2,14 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import PsyduckFace from '../components/PsyduckFace';
 import { useScaledViewport } from '../hooks/useScaledViewport';
-import { COLORS, FONTS, DESIGN, ROLE_OPTIONS, type UserRole } from '../constants';
+import {
+  COLORS,
+  FONTS,
+  DESIGN,
+  ROLE_OPTIONS,
+  toBackendRole,
+  type UserRole,
+} from '../constants';
 import { signUp } from '../api/auth';
 
 export default function Signup() {
@@ -25,9 +32,10 @@ export default function Signup() {
     if (password.length < 6) return setError('비밀번호는 6자 이상이어야 합니다.');
     setSubmitting(true);
     try {
-      const res = await signUp(email, password, name.trim());
+      const res = await signUp(email, password, name.trim(), toBackendRole(role));
       localStorage.setItem('user_role', role);
       localStorage.setItem('user_name', name.trim());
+      if (res.user?.id) localStorage.setItem('user_id', res.user.id);
       if (res.session?.access_token) {
         localStorage.setItem('access_token', res.session.access_token);
         navigate('/home');

@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout';
 import PdfSlideViewer from '../components/PdfSlideViewer';
 import { Button, Card } from '../components/ui';
 import { colors, fonts, radii, shadows, space } from '../design/tokens';
-import { ROLE_LABELS, type UserRole } from '../constants';
+import { ROLE_LABELS, toBackendRole, type UserRole } from '../constants';
+import { setMyRole } from '../api/auth';
 import {
   getAllPortfolios,
   getMyPortfolios,
@@ -163,6 +165,7 @@ function PortfolioCard({
 }
 
 export default function MyPage() {
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const userName = typeof window !== 'undefined' ? localStorage.getItem('user_name') ?? '' : '';
   const role =
@@ -178,14 +181,40 @@ export default function MyPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewTitle, setPreviewTitle] = useState<string>('');
 
-  const loadItems = async () => {
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('user_id');
+    localStorage.removeItem('user_role');
+    localStorage.removeItem('user_name');
+    navigate('/login');
+  };
+
+  const loadItems = async (retried = false) => {
     setLoading(true);
     setError(null);
     try {
       const data = isTeacher ? await getAllPortfolios() : await getMyPortfolios();
       setItems(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : '목록을 불러오지 못했습니다.');
+      const msg = e instanceof Error ? e.message : '목록을 불러오지 못했습니다.';
+      const roleNotFound =
+        !retried &&
+        (msg.includes('role was not found') || msg.includes('role is missing'));
+      if (roleNotFound) {
+        try {
+          await setMyRole(toBackendRole(role));
+          await loadItems(true);
+          return;
+        } catch (innerErr) {
+          setError(
+            innerErr instanceof Error
+              ? `역할 설정 실패: ${innerErr.message}`
+              : '역할 설정 실패',
+          );
+          return;
+        }
+      }
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -299,68 +328,127 @@ export default function MyPage() {
           </div>
         </div>
 
-        <Card
-          variant="surface"
-          radius="xl"
-          elevated
-          style={{
-            padding: `${space[3]}px ${space[5]}px`,
-            display: 'flex',
-            alignItems: 'center',
-            gap: space[5],
-          }}
-        >
-          <div>
-            <div
-              style={{
-                fontFamily: fonts.family.inter,
-                fontSize: fonts.size.xs,
-                color: colors.text.secondary,
-              }}
-            >
-              등록된 포트폴리오
-            </div>
-            <div
-              style={{
-                fontFamily: fonts.family.laundry,
-                fontSize: fonts.size.xl,
-                color: colors.text.primary,
-                fontWeight: fonts.weight.bold,
-                marginTop: 2,
-              }}
-            >
-              {items.length}
-              <span
-                style={{ fontSize: fonts.size.sm, color: colors.text.secondary, marginLeft: 4 }}
+        <div style={{ display: 'flex', alignItems: 'center', gap: space[3] }}>
+          <Card
+            variant="surface"
+            radius="xl"
+            elevated
+            style={{
+              padding: `${space[3]}px ${space[5]}px`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: space[5],
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontFamily: fonts.family.inter,
+                  fontSize: fonts.size.xs,
+                  color: colors.text.secondary,
+                }}
               >
-                개
-              </span>
+                등록된 포트폴리오
+              </div>
+              <div
+                style={{
+                  fontFamily: fonts.family.laundry,
+                  fontSize: fonts.size.xl,
+                  color: colors.text.primary,
+                  fontWeight: fonts.weight.bold,
+                  marginTop: 2,
+                }}
+              >
+                {items.length}
+                <span
+                  style={{
+                    fontSize: fonts.size.sm,
+                    color: colors.text.secondary,
+                    marginLeft: 4,
+                  }}
+                >
+                  개
+                </span>
+              </div>
             </div>
-          </div>
-          <div style={{ width: 1, height: 38, background: colors.border.default }} />
-          <div>
-            <div
-              style={{
-                fontFamily: fonts.family.inter,
-                fontSize: fonts.size.xs,
-                color: colors.text.secondary,
-              }}
-            >
-              최근 업로드
+            <div style={{ width: 1, height: 38, background: colors.border.default }} />
+            <div>
+              <div
+                style={{
+                  fontFamily: fonts.family.inter,
+                  fontSize: fonts.size.xs,
+                  color: colors.text.secondary,
+                }}
+              >
+                최근 업로드
+              </div>
+              <div
+                style={{
+                  fontFamily: fonts.family.laundry,
+                  fontSize: fonts.size.lg,
+                  color: colors.text.primary,
+                  fontWeight: fonts.weight.semibold,
+                  marginTop: 2,
+                }}
+              >
+                {items[0] ? formatDate(items[0].uploadedAt) : '—'}
+              </div>
             </div>
-            <div
-              style={{
-                fontFamily: fonts.family.laundry,
-                fontSize: fonts.size.lg,
-                color: colors.text.primary,
-                fontWeight: fonts.weight.semibold,
-                marginTop: 2,
-              }}
-            >
-              {items[0] ? formatDate(items[0].uploadedAt) : '—'}
-            </div>
-          </div>
-        </Card>
+          </Card>
+          <button
+            onClick={handleLogout}
+            style={{
+              height: 64,
+              padding: '0 20px',
+              background: colors.white,
+              color: colors.text.secondary,
+              border: `2px solid ${colors.border.default}`,
+              borderRadius: radii.md,
+              cursor: 'pointer',
+              fontFamily: fonts.family.laundry,
+              fontSize: fonts.size.md,
+              fontWeight: fonts.weight.semibold,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              transition: 'background 0.15s, color 0.15s, border-color 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.background = '#FFE7E7';
+              (e.currentTarget as HTMLElement).style.color = colors.state.danger;
+              (e.currentTarget as HTMLElement).style.borderColor = colors.state.danger;
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.background = colors.white;
+              (e.currentTarget as HTMLElement).style.color = colors.text.secondary;
+              (e.currentTarget as HTMLElement).style.borderColor = colors.border.default;
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M9 21H5C3.9 21 3 20.1 3 19V5C3 3.9 3.9 3 5 3H9"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M16 17L21 12L16 7"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M21 12H9"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+            로그아웃
+          </button>
+        </div>
       </div>
 
       <div

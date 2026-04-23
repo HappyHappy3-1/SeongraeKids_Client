@@ -25,6 +25,20 @@ export default function Login() {
       if (res.session?.access_token) {
         localStorage.setItem('access_token', res.session.access_token);
       }
+      if (res.user?.id) localStorage.setItem('user_id', res.user.id);
+      const metaRole =
+        (res.user?.user_metadata as { role?: string } | undefined)?.role;
+      const metaName =
+        (res.user?.user_metadata as { name?: string } | undefined)?.name;
+      if (metaRole && !localStorage.getItem('user_role')) {
+        localStorage.setItem(
+          'user_role',
+          metaRole === 'teacher' ? 'teacher' : 'student',
+        );
+      }
+      if (metaName && !localStorage.getItem('user_name')) {
+        localStorage.setItem('user_name', metaName);
+      }
       navigate('/home');
     } catch (e) {
       setError(e instanceof Error ? e.message : '로그인 실패');

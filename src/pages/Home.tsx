@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { COLORS, FONTS } from '../constants';
+import { colors, fonts, radii, shadows, space, zIndex } from '../design/tokens';
 import '../home.css';
 
 // ─── Dummy Data ───────────────────────────────────────────────────────────────
@@ -71,7 +72,17 @@ const DAY_LABELS_KO = ['일요일', '월요일', '화요일', '수요일', '목�
 
 // ─── JobCard ──────────────────────────────────────────────────────────────────
 
-function JobCard({ card, width }: { card: (typeof JOB_CARDS_DATA)[0]; width: number }) {
+type Job = (typeof JOB_CARDS_DATA)[0];
+
+function JobCard({
+  card,
+  width,
+  onClick,
+}: {
+  card: Job;
+  width: number;
+  onClick: () => void;
+}) {
   const sections = [
     { label: '채용 인원', content: card.headcount },
     { label: '지원 요건', content: card.requirements },
@@ -82,6 +93,15 @@ function JobCard({ card, width }: { card: (typeof JOB_CARDS_DATA)[0]; width: num
   return (
     <div
       className="jobCard"
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       style={{ width, background: COLORS.darkCard, fontFamily: FONTS.inter }}
     >
       <p className="jobCardDday">{card.dday}</p>
@@ -103,6 +123,229 @@ function JobCard({ card, width }: { card: (typeof JOB_CARDS_DATA)[0]; width: num
           병역 가능
         </p>
       )}
+    </div>
+  );
+}
+
+function JobDetailModal({ job, onClose }: { job: Job; onClose: () => void }) {
+  const sections: { label: string; content: string; link?: boolean }[] = [
+    { label: '채용 인원', content: job.headcount },
+    { label: '지원 요건', content: job.requirements },
+    { label: '회사 위치', content: job.location },
+    { label: '클래스룸 링크', content: job.classroomLink, link: true },
+  ];
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.6)',
+        backdropFilter: 'blur(4px)',
+        zIndex: zIndex.modal,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: 'min(640px, 100%)',
+          maxHeight: '86vh',
+          background: colors.white,
+          borderRadius: radii['2xl'],
+          boxShadow: shadows.float,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <div
+          style={{
+            padding: `${space[6]}px ${space[6]}px ${space[5]}px`,
+            background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%)`,
+            color: colors.text.primary,
+            position: 'relative',
+          }}
+        >
+          <button
+            onClick={onClose}
+            aria-label="닫기"
+            style={{
+              position: 'absolute',
+              top: 14,
+              right: 14,
+              width: 32,
+              height: 32,
+              borderRadius: radii.full,
+              border: 'none',
+              background: 'rgba(0,0,0,0.12)',
+              color: colors.text.primary,
+              cursor: 'pointer',
+              fontSize: 20,
+              lineHeight: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            ×
+          </button>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '4px 12px',
+              background: 'rgba(0,0,0,0.18)',
+              borderRadius: radii.full,
+              fontFamily: fonts.family.inter,
+              fontSize: fonts.size.sm,
+              fontWeight: fonts.weight.bold,
+              color: colors.white,
+            }}
+          >
+            {job.dday}
+          </div>
+          <div
+            style={{
+              marginTop: 12,
+              fontFamily: fonts.family.laundry,
+              fontSize: fonts.size['2xl'],
+              fontWeight: fonts.weight.bold,
+              lineHeight: 1.2,
+            }}
+          >
+            {job.company}
+          </div>
+          {job.military && (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                marginTop: 12,
+                padding: '4px 10px',
+                background: colors.white,
+                color: colors.primaryDark,
+                borderRadius: radii.full,
+                fontFamily: fonts.family.inter,
+                fontSize: fonts.size.xs,
+                fontWeight: fonts.weight.bold,
+              }}
+            >
+              🪖 병역 가능
+            </div>
+          )}
+        </div>
+        <div
+          style={{
+            padding: space[6],
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: space[4],
+          }}
+        >
+          {sections.map(({ label, content, link }) => (
+            <div key={label}>
+              <div
+                style={{
+                  fontFamily: fonts.family.inter,
+                  fontSize: fonts.size.xs,
+                  fontWeight: fonts.weight.bold,
+                  color: colors.primaryDark,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: 6,
+                }}
+              >
+                {label}
+              </div>
+              {link ? (
+                <a
+                  href={content}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    fontFamily: fonts.family.inter,
+                    fontSize: fonts.size.base,
+                    color: colors.primaryDark,
+                    wordBreak: 'break-all',
+                    textDecoration: 'underline',
+                  }}
+                >
+                  {content}
+                </a>
+              ) : (
+                <div
+                  style={{
+                    fontFamily: fonts.family.pretendard,
+                    fontSize: fonts.size.base,
+                    color: colors.text.primary,
+                    whiteSpace: 'pre-line',
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {content}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div
+          style={{
+            padding: `${space[3]}px ${space[6]}px ${space[5]}px`,
+            borderTop: `1px solid ${colors.border.default}`,
+            display: 'flex',
+            gap: space[2],
+          }}
+        >
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1,
+              height: 48,
+              background: colors.surface.muted,
+              color: colors.text.primary,
+              border: 'none',
+              borderRadius: radii.md,
+              cursor: 'pointer',
+              fontFamily: fonts.family.laundry,
+              fontSize: fonts.size.md,
+              fontWeight: fonts.weight.bold,
+            }}
+          >
+            닫기
+          </button>
+          <a
+            href={job.classroomLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              flex: 1,
+              height: 48,
+              background: colors.primary,
+              color: colors.text.primary,
+              border: 'none',
+              borderRadius: radii.md,
+              cursor: 'pointer',
+              fontFamily: fonts.family.laundry,
+              fontSize: fonts.size.md,
+              fontWeight: fonts.weight.bold,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              textDecoration: 'none',
+            }}
+          >
+            클래스룸으로 이동 ›
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
@@ -137,9 +380,24 @@ function ArrowButton({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Home() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth() + 1;
+  const date = today.getDate();
+  const todayDow = today.getDay();
+
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - todayDow);
+  const calendarNums = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    return d.getDate();
+  });
+
   const [slideIndex, setSlideIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<'active' | 'closed'>('active');
-  const [selectedDay, setSelectedDay] = useState(3);
+  const [selectedDay, setSelectedDay] = useState(todayDow);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
   const CARD_WIDTH = 249;
   const CARD_GAP = 12;
@@ -148,13 +406,6 @@ export default function Home() {
 
   const calendarStartX = 1059;
   const cellW = 33;
-  const calendarNums = [1, 2, 3, 4, 5, 6, 7];
-
-  const today = new Date();
-
-const year = today.getFullYear();
-const month = today.getMonth() + 1; // 1월이 0이라서 +1 필수!
-const date = today.getDate();
 
   return (
     <DashboardLayout activePath="/home" sidebarTop={180} fillWidth>
@@ -192,7 +443,12 @@ const date = today.getDate();
           style={{ gap: CARD_GAP, transform: `translateX(-${slideIndex * (CARD_WIDTH + CARD_GAP)}px)` }}
         >
           {JOB_CARDS_DATA.map((card) => (
-            <JobCard key={card.id} card={card} width={CARD_WIDTH} />
+            <JobCard
+              key={card.id}
+              card={card}
+              width={CARD_WIDTH}
+              onClick={() => setSelectedJob(card)}
+            />
           ))}
         </div>
       </div>
@@ -328,6 +584,10 @@ const date = today.getDate();
 
       {/* ── 급식 섹션 (빈 칸) ── */}
       <div className="mealSection" />
+
+      {selectedJob && (
+        <JobDetailModal job={selectedJob} onClose={() => setSelectedJob(null)} />
+      )}
     </DashboardLayout>
   );
 }
