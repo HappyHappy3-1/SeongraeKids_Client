@@ -3,13 +3,35 @@ import { useEffect, useState } from 'react';
 import PsyduckFace from '../components/PsyduckFace';
 import { useScaledViewport } from '../hooks/useScaledViewport';
 import { COLORS, FONTS, DESIGN } from '../constants';
+import { login } from '../api/auth';
 
 export default function Login() {
   const navigate = useNavigate();
   const { scale, offsetX } = useScaledViewport();
   const [splitY, setSplitY] = useState(453);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => { setSplitY(453 * scale); }, [scale]);
+
+  const handleLogin = async () => {
+    if (submitting) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      const res = await login(email, password);
+      if (res.session?.access_token) {
+        localStorage.setItem('access_token', res.session.access_token);
+      }
+      navigate('/home');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '로그인 실패');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="w-screen h-screen overflow-hidden relative">
@@ -31,20 +53,29 @@ export default function Login() {
             <svg width="33" height="35" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 mr-4">
               <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill={COLORS.primary} />
             </svg>
-            <input type="text" placeholder="풀이름 입력해주세용"
+            <input type="email" placeholder="이메일을 입력해주세용"
+              value={email} onChange={(e) => setEmail(e.target.value)}
               className="flex-1 border-none outline-none bg-transparent text-center"
               style={{ fontSize: 20, fontFamily: FONTS.laundry, color: COLORS.placeholder }} />
           </div>
           <div className="absolute bg-white border-[3px] border-[#FDCB35] rounded-[5px] flex items-center justify-center"
             style={{ left: 340, top: 720, width: 759, height: 73, padding: '0 23px' }}>
             <input type="password" placeholder="비밀번호 ㄱ "
+              value={password} onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }}
               className="flex-1 border-none outline-none bg-transparent text-center"
               style={{ fontSize: 20, fontFamily: FONTS.laundry, color: COLORS.placeholder }} />
           </div>
-          <button onClick={() => navigate('/home')}
-            className="absolute border-[3px] border-[#FDCB35] rounded-[5px] cursor-pointer flex items-center justify-center"
+          {error && (
+            <div className="absolute text-center"
+              style={{ left: 340, top: 810, width: 759, fontSize: 16, fontFamily: FONTS.laundry, color: '#d33' }}>
+              {error}
+            </div>
+          )}
+          <button onClick={handleLogin} disabled={submitting}
+            className="absolute border-[3px] border-[#FDCB35] rounded-[5px] cursor-pointer flex items-center justify-center disabled:opacity-60"
             style={{ left: 340, top: 866, width: 759, height: 73, background: COLORS.primary, fontSize: 20, fontFamily: FONTS.laundry, color: COLORS.placeholder }}>
-            로그인
+            {submitting ? '로그인 중...' : '로그인'}
           </button>
         </div>
       </div>
