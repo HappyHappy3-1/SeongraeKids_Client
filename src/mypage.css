@@ -1,0 +1,71 @@
+/* ── 마이페이지 ── */
+
+.mypageSubTitle {
+  position: absolute;
+  left: 400px;
+  top: 188px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #888;
+}
+
+.mypageTitle {
+  position: absolute;
+  left: 400px;
+  top: 203px;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+/* 포트폴리오 업로드 박스 */
+.mypagePortfolioBox {
+  position: absolute;
+  left: 400px;
+  top: 258px;
+  width: 748px;
+  height: 130px;
+  border: 1.5px solid #FDCB35;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.mypagePortfolioBox:hover {
+  background: rgba(253, 203, 53, 0.04);
+}
+
+.mypagePortfolioBoxText {
+  font-size: 13px;
+  color: #bbb;
+}
+
+/* 피드백 섹션 타이틀 */
+.mypageFeedbackTitle {
+  position: absolute;
+  left: 400px;
+  top: 414px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* 피드백 박스 */
+.mypageFeedbackBox {
+  position: absolute;
+  left: 400px;
+  top: 450px;
+  width: 748px;
+  height: 200px;
+  border: 1.5px solid #FDCB35;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mypageFeedbackBoxText {
+  font-size: 13px;
+  color: #bbb;
+}

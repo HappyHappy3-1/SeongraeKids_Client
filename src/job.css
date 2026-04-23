@@ -1,0 +1,61 @@
+/* ── 취업 의뢰 페이지 ── */
+
+/* 페이지 타이틀 */
+.jobsPageTitle {
+  position: absolute;
+  left: 300px;
+  top: 152px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+/* 섹션 라벨 */
+.jobsSectionLabel {
+  position: absolute;
+  left: 300px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #888;
+}
+
+/* 카드 그리드 래퍼 */
+.jobsGrid {
+  position: absolute;
+  left: 300px;
+  display: grid;
+  grid-template-columns: repeat(4, 225px);
+  gap: 12px;
+}
+
+/* ── JobCard ── */
+.jobsCard {
+  width: 225px;
+  border-radius: 4px;
+  padding: 20px 18px;
+  box-sizing: border-box;
+  cursor: pointer;
+  color: #fff;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.jobsCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+.jobsCardDday    { font-size: 10px; font-weight: 600; margin: 0 0 4px; }
+.jobsCardLabel   { font-size: 7px;  font-weight: 600; margin: 0 0 2px; color: #aaa; }
+.jobsCardCompany { font-size: 18px; font-weight: 700; margin: 0 0 8px; line-height: 1.2; }
+.jobsCardDivider { border: none; border-top: 1px solid rgba(255,255,255,0.2); margin: 0 0 8px; }
+
+.jobsCardSection        { margin-bottom: 7px; }
+.jobsCardSectionLabel   { font-size: 7px; font-weight: 600; margin: 0 0 2px; }
+.jobsCardSectionContent {
+  font-size: 8px;
+  margin: 0;
+  color: #ccc;
+  white-space: pre-line;
+  line-height: 1.4;
+}
+.jobsCardSectionContentBreak { word-break: break-all; }
+.jobsCardMilitary { font-size: 7px; font-weight: 600; margin: 8px 0 0; }

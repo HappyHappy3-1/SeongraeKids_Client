@@ -17,7 +17,7 @@ function BallotIcon() {
 
 export default function Classroom() {
   return (
-    <DashboardLayout activePath="/classroom" sidebarTop={326}>
+    <DashboardLayout activePath="/classroom" sidebarTop={326} fillWidth>
       <div className="absolute bg-white" style={{ left: 249, top: 216, width: 515, height: 334, borderRadius: 15 }} />
       <div className="absolute" style={{ left: 330, top: 244, width: 353, fontSize: 20, fontWeight: 600, fontFamily: FONTS.pretendard }}>
         민바오는 민재 바보오 일까 민재 푸바오일까

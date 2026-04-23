@@ -3,6 +3,8 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import Classroom from './pages/Classroom';
+import Jobs from './pages/Jobs'
+import MyPage from './pages/MyPage';
 
 function App() {
   return (
@@ -12,6 +14,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/home" element={<Home />} />
         <Route path="/classroom" element={<Classroom />} />
+        <Route path="/jobs" element={<Jobs />} />
+        <Route path="/mypage" element={<MyPage />}/>
       </Routes>
     </BrowserRouter>
   );
