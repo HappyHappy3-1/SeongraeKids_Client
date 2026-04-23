@@ -141,7 +141,7 @@ function JobDetailModal({ job, onClose }: { job: Job; onClose: () => void }) {
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,0.6)',
+        background: 'rgba(0,0,0,0.62)',
         backdropFilter: 'blur(4px)',
         zIndex: zIndex.modal,
         display: 'flex',
@@ -153,113 +153,103 @@ function JobDetailModal({ job, onClose }: { job: Job; onClose: () => void }) {
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: 'min(640px, 100%)',
+          width: 'min(560px, 100%)',
           maxHeight: '86vh',
-          background: colors.white,
-          borderRadius: radii['2xl'],
+          background: colors.surface.dark,
+          borderRadius: radii.xl,
           boxShadow: shadows.float,
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
+          overflowY: 'auto',
+          padding: `${space[8]}px ${space[8]}px ${space[6]}px`,
+          position: 'relative',
+          color: colors.white,
+          fontFamily: fonts.family.pretendard,
         }}
       >
+        <button
+          onClick={onClose}
+          aria-label="닫기"
+          style={{
+            position: 'absolute',
+            top: 14,
+            right: 14,
+            width: 32,
+            height: 32,
+            borderRadius: radii.full,
+            border: 'none',
+            background: 'rgba(255,255,255,0.12)',
+            color: colors.white,
+            cursor: 'pointer',
+            fontSize: 20,
+            lineHeight: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'background 0.15s',
+          }}
+          onMouseEnter={(e) =>
+            ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.22)')
+          }
+          onMouseLeave={(e) =>
+            ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.12)')
+          }
+        >
+          ×
+        </button>
+
         <div
           style={{
-            padding: `${space[6]}px ${space[6]}px ${space[5]}px`,
-            background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%)`,
-            color: colors.text.primary,
-            position: 'relative',
+            fontFamily: fonts.family.inter,
+            fontSize: fonts.size.lg,
+            fontWeight: fonts.weight.bold,
+            color: colors.white,
+            letterSpacing: '0.5px',
+            marginBottom: space[5],
           }}
         >
-          <button
-            onClick={onClose}
-            aria-label="닫기"
-            style={{
-              position: 'absolute',
-              top: 14,
-              right: 14,
-              width: 32,
-              height: 32,
-              borderRadius: radii.full,
-              border: 'none',
-              background: 'rgba(0,0,0,0.12)',
-              color: colors.text.primary,
-              cursor: 'pointer',
-              fontSize: 20,
-              lineHeight: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            ×
-          </button>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '4px 12px',
-              background: 'rgba(0,0,0,0.18)',
-              borderRadius: radii.full,
-              fontFamily: fonts.family.inter,
-              fontSize: fonts.size.sm,
-              fontWeight: fonts.weight.bold,
-              color: colors.white,
-            }}
-          >
-            {job.dday}
-          </div>
-          <div
-            style={{
-              marginTop: 12,
-              fontFamily: fonts.family.laundry,
-              fontSize: fonts.size['2xl'],
-              fontWeight: fonts.weight.bold,
-              lineHeight: 1.2,
-            }}
-          >
-            {job.company}
-          </div>
-          {job.military && (
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                marginTop: 12,
-                padding: '4px 10px',
-                background: colors.white,
-                color: colors.primaryDark,
-                borderRadius: radii.full,
-                fontFamily: fonts.family.inter,
-                fontSize: fonts.size.xs,
-                fontWeight: fonts.weight.bold,
-              }}
-            >
-              🪖 병역 가능
-            </div>
-          )}
+          {job.dday}
+        </div>
+
+        <div
+          style={{
+            fontFamily: fonts.family.inter,
+            fontSize: fonts.size.sm,
+            color: 'rgba(255,255,255,0.72)',
+            fontWeight: fonts.weight.medium,
+            marginBottom: 2,
+          }}
+        >
+          회사명
         </div>
         <div
           style={{
-            padding: space[6],
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: space[4],
+            fontFamily: fonts.family.laundry,
+            fontSize: fonts.size['3xl'],
+            fontWeight: fonts.weight.bold,
+            color: colors.primary,
+            lineHeight: 1.12,
+            marginBottom: space[5],
           }}
         >
+          {job.company}
+        </div>
+
+        <div
+          style={{
+            height: 1,
+            background: 'rgba(255,255,255,0.22)',
+            margin: `0 0 ${space[5]}px`,
+          }}
+        />
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: space[5] }}>
           {sections.map(({ label, content, link }) => (
             <div key={label}>
               <div
                 style={{
                   fontFamily: fonts.family.inter,
-                  fontSize: fonts.size.xs,
+                  fontSize: fonts.size.base,
                   fontWeight: fonts.weight.bold,
-                  color: colors.primaryDark,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
+                  color: colors.white,
                   marginBottom: 6,
                 }}
               >
@@ -273,19 +263,27 @@ function JobDetailModal({ job, onClose }: { job: Job; onClose: () => void }) {
                   style={{
                     fontFamily: fonts.family.inter,
                     fontSize: fonts.size.base,
-                    color: colors.primaryDark,
+                    color: 'rgba(255,255,255,0.78)',
                     wordBreak: 'break-all',
-                    textDecoration: 'underline',
+                    textDecoration: 'none',
+                    lineHeight: 1.5,
+                    display: 'inline-block',
                   }}
+                  onMouseEnter={(e) =>
+                    ((e.currentTarget as HTMLElement).style.textDecoration = 'underline')
+                  }
+                  onMouseLeave={(e) =>
+                    ((e.currentTarget as HTMLElement).style.textDecoration = 'none')
+                  }
                 >
                   {content}
                 </a>
               ) : (
                 <div
                   style={{
-                    fontFamily: fonts.family.pretendard,
+                    fontFamily: fonts.family.inter,
                     fontSize: fonts.size.base,
-                    color: colors.text.primary,
+                    color: 'rgba(255,255,255,0.78)',
                     whiteSpace: 'pre-line',
                     lineHeight: 1.55,
                   }}
@@ -296,55 +294,20 @@ function JobDetailModal({ job, onClose }: { job: Job; onClose: () => void }) {
             </div>
           ))}
         </div>
-        <div
-          style={{
-            padding: `${space[3]}px ${space[6]}px ${space[5]}px`,
-            borderTop: `1px solid ${colors.border.default}`,
-            display: 'flex',
-            gap: space[2],
-          }}
-        >
-          <button
-            onClick={onClose}
+
+        {job.military && (
+          <div
             style={{
-              flex: 1,
-              height: 48,
-              background: colors.surface.muted,
-              color: colors.text.primary,
-              border: 'none',
-              borderRadius: radii.md,
-              cursor: 'pointer',
-              fontFamily: fonts.family.laundry,
-              fontSize: fonts.size.md,
+              marginTop: space[6],
+              fontFamily: fonts.family.inter,
+              fontSize: fonts.size.base,
               fontWeight: fonts.weight.bold,
+              color: colors.primary,
             }}
           >
-            닫기
-          </button>
-          <a
-            href={job.classroomLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              flex: 1,
-              height: 48,
-              background: colors.primary,
-              color: colors.text.primary,
-              border: 'none',
-              borderRadius: radii.md,
-              cursor: 'pointer',
-              fontFamily: fonts.family.laundry,
-              fontSize: fonts.size.md,
-              fontWeight: fonts.weight.bold,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              textDecoration: 'none',
-            }}
-          >
-            클래스룸으로 이동 ›
-          </a>
-        </div>
+            병역 가능
+          </div>
+        )}
       </div>
     </div>
   );
