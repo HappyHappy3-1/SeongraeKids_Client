@@ -23,7 +23,6 @@ export const ACTIVE_ICON_FILTER =
 export const SIDEBAR_ITEMS = [
   { icon: '/icons/home.svg', label: '홈 화면', path: '/home' },
   { icon: '/icons/school.svg', label: '학급', path: '/classroom' },
-  { icon: '/icons/folder.svg', label: '포트폴리오', path: '/portfolio' },
   { icon: '/icons/business.svg', label: '취업 의뢰', path: '/jobs' },
   { icon: '/icons/profile.svg', label: '마이페이지', path: '/mypage' },
 ] as const;

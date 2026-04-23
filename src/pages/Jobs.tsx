@@ -137,7 +137,7 @@ export default function Jobs() {
   const SECTION2_TOP = SECTION1_TOP + CARD_HEIGHT + 58;
 
   return (
-    <DashboardLayout activePath="/jobs" sidebarTop={332} fillWidth>
+    <DashboardLayout activePath="/jobs" sidebarTop={180} fillWidth>
 
       {/* 페이지 타이틀 */}
       <p

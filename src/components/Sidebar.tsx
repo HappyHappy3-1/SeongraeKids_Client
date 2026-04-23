@@ -41,7 +41,7 @@ function SidebarItem({ icon, label, path, isActive, onNav }: SidebarItemProps) {
         style={{
           width: 32,
           height: 32,
-          filter: isActive ? filters.activeYellow : 'none',
+          filter: isActive ? filters.activeYellow : filters.inactiveIcon,
           transition: `filter ${motion.duration.fast} ${motion.easing.standard}`,
         }}
       />

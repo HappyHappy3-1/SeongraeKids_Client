@@ -157,7 +157,7 @@ const month = today.getMonth() + 1; // 1월이 0이라서 +1 필수!
 const date = today.getDate();
 
   return (
-    <DashboardLayout activePath="/home" sidebarTop={332} fillWidth>
+    <DashboardLayout activePath="/home" sidebarTop={180} fillWidth>
 
       {/* ── 취업 의뢰 공고 섹션 ── */}
       <div className="jobSection" />

@@ -1,13 +1,20 @@
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+
+function authHeader(): Record<string, string> {
+  const token = localStorage.getItem('access_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 export async function apiFetch<T = unknown>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
+  const isFormData = init?.body instanceof FormData;
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+      ...authHeader(),
       ...(init?.headers ?? {}),
     },
   });

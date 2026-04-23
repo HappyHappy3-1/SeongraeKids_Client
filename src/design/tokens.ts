@@ -82,6 +82,7 @@ export const design = { width: 1440, height: 1024 } as const;
 export const filters = {
   activeYellow:
     'brightness(0) saturate(100%) invert(82%) sepia(45%) saturate(1000%) hue-rotate(355deg) brightness(100%) contrast(95%)',
+  inactiveIcon: 'brightness(0) saturate(100%) opacity(0.38)',
   muted: 'grayscale(60%) opacity(0.6)',
 } as const;
 
