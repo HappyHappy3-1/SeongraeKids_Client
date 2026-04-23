@@ -77,6 +77,11 @@ export default function Login() {
             style={{ left: 340, top: 866, width: 759, height: 73, background: COLORS.primary, fontSize: 20, fontFamily: FONTS.laundry, color: COLORS.placeholder }}>
             {submitting ? '로그인 중...' : '로그인'}
           </button>
+          <button onClick={() => navigate('/signup')}
+            className="absolute cursor-pointer"
+            style={{ left: 340, top: 955, width: 759, fontSize: 16, fontFamily: FONTS.laundry, color: COLORS.subtleGray, background: 'transparent', border: 'none' }}>
+            아직 계정이 없어요 · 회원가입하러 가기
+          </button>
         </div>
       </div>
     </div>

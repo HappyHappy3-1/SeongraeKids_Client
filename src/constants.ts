@@ -29,3 +29,19 @@ export const SIDEBAR_ITEMS = [
 ] as const;
 
 export const DESIGN = { width: 1440, height: 1024 } as const;
+
+export type UserRole = 'teacher' | 'president' | 'vice_president' | 'student';
+
+export const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
+  { value: 'teacher', label: '선생님' },
+  { value: 'president', label: '반장' },
+  { value: 'vice_president', label: '부반장' },
+  { value: 'student', label: '학생' },
+];
+
+export const ROLE_LABELS: Record<UserRole, string> = {
+  teacher: '선생님',
+  president: '반장',
+  vice_president: '부반장',
+  student: '학생',
+};
