@@ -5,7 +5,7 @@ FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci
+    (npm ci --no-audit --fund=false || npm install --no-audit --fund=false)
 
 FROM node:22-alpine AS build
 WORKDIR /app
