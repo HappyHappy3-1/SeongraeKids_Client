@@ -36,3 +36,22 @@ export function getPortfolioDownloadUrl(portfolioId: string, expiresIn = 300) {
     `/portfolio/${portfolioId}/download-url?expiresIn=${expiresIn}`,
   );
 }
+
+const signedUrlCache = new Map<
+  string,
+  { url: string; expiresAt: number }
+>();
+
+export async function getCachedSignedUrl(portfolioId: string): Promise<string> {
+  const hit = signedUrlCache.get(portfolioId);
+  const now = Date.now();
+  if (hit && hit.expiresAt > now + 10_000) {
+    return hit.url;
+  }
+  const res = await getPortfolioDownloadUrl(portfolioId, 300);
+  signedUrlCache.set(portfolioId, {
+    url: res.url,
+    expiresAt: now + res.expiresIn * 1000,
+  });
+  return res.url;
+}

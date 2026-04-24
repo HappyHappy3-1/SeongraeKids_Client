@@ -1,78 +1,61 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout';
 import { COLORS, FONTS } from '../constants';
 import { colors, fonts, radii, shadows, space, zIndex } from '../design/tokens';
+import { listRecruitmentPosts, type RecruitmentPost } from '../api/recruitment';
+import { listNotices, type Notice } from '../api/notices';
+import SchoolTabs from '../components/SchoolTabs';
+import NoticeDetailModal from '../components/NoticeDetailModal';
+import { useEscapeKey } from '../hooks/useEscapeKey';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import '../home.css';
 
-// ─── Dummy Data ───────────────────────────────────────────────────────────────
+interface Job {
+  id: string;
+  dday: string;
+  company: string;
+  headcount: string;
+  requirements: string;
+  location: string;
+  classroomLink: string;
+  military: boolean;
+  deadline: string | null;
+}
 
-const JOB_CARDS_DATA = [
-  {
-    id: 1,
-    dday: 'D-10',
-    company: 'SK 삼성 하이닉스',
-    headcount: '각 분야별 1명 소수 채용( 프론트/백엔드 )',
-    requirements: 'Typescript, React, Spring Boot 등 Docker 기반 협업\n성래쌤 직접 기입 내용',
-    location: '서울특별시 어디어디어이더 호암로 미림마이스터고\n성래쌤 직접 기입 내용',
-    classroomLink: 'https://classroom.google.com/u/0/c/ODI1OTgyMDA1NjMw/a/ODU5Mzc2OTUwNTcy/details',
-    military: true,
-  },
-  {
-    id: 2,
-    dday: 'D-3',
-    company: '카카오 엔터프라이즈',
-    headcount: '신입 개발자 2명 채용 ( 풀스택 )',
-    requirements: 'React, Node.js, TypeScript 필수\n클라우드 경험 우대',
-    location: '경기도 성남시 분당구 판교역로\n성래쌤 직접 기입 내용',
-    classroomLink: 'https://classroom.google.com/u/0/c/example',
-    military: false,
-  },
-  {
-    id: 3,
-    dday: 'D-7',
-    company: 'NAVER Cloud',
-    headcount: '백엔드 개발자 1명 채용',
-    requirements: 'Java, Spring Boot, Kubernetes\nCI/CD 경험 우대',
-    location: '경기도 성남시 분당구 정자일로\n성래쌤 직접 기입 내용',
-    classroomLink: 'https://classroom.google.com/u/0/c/example2',
-    military: true,
-  },
-  {
-    id: 4,
-    dday: 'D-14',
-    company: '라인 플러스',
-    headcount: '프론트엔드 개발자 1명',
-    requirements: 'Vue.js 또는 React, TypeScript\n글로벌 서비스 경험 우대',
-    location: '서울특별시 강남구 테헤란로\n성래쌤 직접 기입 내용',
-    classroomLink: 'https://classroom.google.com/u/0/c/example3',
-    military: false,
-  },
-];
+function summarize(s: string, n = 40): string {
+  const flat = s.replace(/\s+/g, ' ').trim();
+  return flat.length > n ? flat.slice(0, n).trim() + '…' : flat;
+}
 
-const ANNOUNCEMENTS = [
-  { id: 1, text: '이번주 CA 는 멘토링 입니다~ 성래쌤 직접 기입 내용~~', date: '2026.04.23' },
-  { id: 2, text: '4월 현장학습 신청 마감 안내입니다. 성래쌤 직접 기입 내용~~', date: '2026.04.22' },
-  { id: 3, text: '취업 의뢰 신규 등록 안내 - SK 삼성 하이닉스 외 3건', date: '2026.04.21' },
-  { id: 4, text: '5월 포트폴리오 발표회 일정 공지입니다 성래쌤 직접 기입 내용~~', date: '2026.04.20' },
-  { id: 5, text: '현장실습 확인서 제출 기한 안내 성래쌤 직접 기입 내용~~', date: '2026.04.19' },
-];
+function computeDday(deadline: string | null): string {
+  if (!deadline) return '모집중';
+  const d = new Date(deadline);
+  if (isNaN(d.getTime())) return '모집중';
+  const diff = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  if (diff < 0) return '마감';
+  if (diff === 0) return 'D-DAY';
+  return `D-${diff}`;
+}
 
-const SCHEDULE_ITEMS = [
-  { label: 'SK 삼성 하이닉스 마감', highlight: false },
-  { label: 'SK 삼성 하이닉스 마감', highlight: false },
-  { label: 'SK 삼성 하이닉스 마감', highlight: false },
-  { label: 'SK 삼성 하이닉스 마감', highlight: false },
-  { label: 'SK 삼성 하이닉스 마감', highlight: false },
-  { label: 'SK 삼성 하이닉스 마감', highlight: true },
-  { label: 'SK 삼성 하이닉스 마감', highlight: false },
-];
+function toJob(post: RecruitmentPost): Job {
+  return {
+    id: post.id,
+    dday: computeDday(post.deadline),
+    company: post.company_name,
+    headcount: `${post.headcount}명 채용`,
+    requirements: post.description ?? '세부 내용은 클래스룸 링크 참조',
+    location: post.location,
+    classroomLink: post.classroom_link ?? '',
+    military: post.military_service_available,
+    deadline: post.deadline,
+  };
+}
 
 const DAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 const DAY_LABELS_KO = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
 
 // ─── JobCard ──────────────────────────────────────────────────────────────────
-
-type Job = (typeof JOB_CARDS_DATA)[0];
 
 function JobCard({
   card,
@@ -85,16 +68,24 @@ function JobCard({
 }) {
   const sections = [
     { label: '채용 인원', content: card.headcount },
-    { label: '지원 요건', content: card.requirements },
+    { label: '지원 요건', content: summarize(card.requirements, 38) },
     { label: '회사 위치', content: card.location },
     { label: '클래스룸 링크', content: card.classroomLink },
   ];
+
+  const urgent = card.dday === 'D-DAY' || card.dday === 'D-1' || card.dday === 'D-2';
+  const ddayColor = card.dday === '마감'
+    ? 'rgba(255,255,255,0.45)'
+    : urgent
+      ? '#FF6B4A'
+      : COLORS.primary;
 
   return (
     <div
       className="jobCard"
       role="button"
       tabIndex={0}
+      aria-label={`${card.company} 공고, ${card.dday}`}
       onClick={onClick}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -104,7 +95,9 @@ function JobCard({
       }}
       style={{ width, background: COLORS.darkCard, fontFamily: FONTS.inter }}
     >
-      <p className="jobCardDday">{card.dday}</p>
+      <p className="jobCardDday" style={{ color: ddayColor, fontWeight: urgent ? 800 : 600 }}>
+        {card.dday}
+      </p>
       <p className="jobCardLabel">회사명</p>
       <p className="jobCardCompany" style={{ color: COLORS.primary, fontFamily: FONTS.laundry }}>
         {card.company}
@@ -128,9 +121,12 @@ function JobCard({
 }
 
 function JobDetailModal({ job, onClose }: { job: Job; onClose: () => void }) {
+  useEscapeKey(onClose);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(panelRef);
+  const [showDetail, setShowDetail] = useState(false);
   const sections: { label: string; content: string; link?: boolean }[] = [
     { label: '채용 인원', content: job.headcount },
-    { label: '지원 요건', content: job.requirements },
     { label: '회사 위치', content: job.location },
     { label: '클래스룸 링크', content: job.classroomLink, link: true },
   ];
@@ -151,6 +147,10 @@ function JobDetailModal({ job, onClose }: { job: Job; onClose: () => void }) {
       }}
     >
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${job.company} 공고 상세`}
         onClick={(e) => e.stopPropagation()}
         style={{
           width: 'min(560px, 100%)',
@@ -295,6 +295,50 @@ function JobDetailModal({ job, onClose }: { job: Job; onClose: () => void }) {
           ))}
         </div>
 
+        {job.requirements && (
+          <div style={{ marginTop: space[5] }}>
+            <button
+              onClick={() => setShowDetail((v) => !v)}
+              style={{
+                width: '100%',
+                padding: `${space[2]}px ${space[3]}px`,
+                background: 'rgba(255,255,255,0.10)',
+                color: colors.white,
+                border: `1px solid rgba(255,255,255,0.18)`,
+                borderRadius: radii.md,
+                cursor: 'pointer',
+                fontFamily: fonts.family.laundry,
+                fontSize: fonts.size.md,
+                fontWeight: fonts.weight.bold,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span>세부 내용 보기</span>
+              <span style={{ color: colors.primary }}>{showDetail ? '▲' : '▼'}</span>
+            </button>
+            {showDetail && (
+              <div
+                style={{
+                  marginTop: space[2],
+                  color: 'rgba(255,255,255,0.82)',
+                  whiteSpace: 'pre-wrap',
+                  lineHeight: 1.6,
+                  maxHeight: 320,
+                  overflowY: 'auto',
+                  padding: space[3],
+                  background: 'rgba(255,255,255,0.06)',
+                  borderRadius: radii.md,
+                  fontSize: fonts.size.sm,
+                }}
+              >
+                {job.requirements}
+              </div>
+            )}
+          </div>
+        )}
+
         {job.military && (
           <div
             style={{
@@ -343,14 +387,21 @@ function ArrowButton({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Home() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth() + 1;
-  const date = today.getDate();
+  const navigate = useNavigate();
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
   const todayDow = today.getDay();
 
-  const weekStart = new Date(today);
-  weekStart.setDate(today.getDate() - todayDow);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const weekStart = useMemo(() => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - todayDow + weekOffset * 7);
+    return d;
+  }, [today, todayDow, weekOffset]);
+
   const calendarNums = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
     d.setDate(weekStart.getDate() + i);
@@ -361,14 +412,103 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'active' | 'closed'>('active');
   const [selectedDay, setSelectedDay] = useState(todayDow);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [notices, setNotices] = useState<Notice[]>([]);
+
+  useEffect(() => {
+    const reload = () => {
+      listRecruitmentPosts()
+        .then((posts) => setJobs(posts.map(toJob)))
+        .catch(() => setJobs([]));
+      listNotices()
+        .then(setNotices)
+        .catch(() => setNotices([]));
+    };
+    reload();
+    const onFocus = () => {
+      if (document.visibilityState === 'visible') reload();
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
+  }, []);
+
+  const announcements = useMemo(
+    () =>
+      notices.slice(0, 5).map((n) => ({
+        id: n.id,
+        text: n.title,
+        date: (n.published_at ?? '').slice(0, 10).replace(/-/g, '.'),
+      })),
+    [notices],
+  );
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const isClosed = (j: Job) => {
+    if (j.dday === '마감') return true;
+    return false;
+  };
+  const activeJobs = jobs.filter((j) => !isClosed(j));
+  const closedJobs = jobs.filter(isClosed);
+  const visibleJobs = activeTab === 'active' ? activeJobs : closedJobs;
 
   const CARD_WIDTH = 249;
   const CARD_GAP = 12;
   const VISIBLE = 3;
-  const maxSlide = JOB_CARDS_DATA.length - VISIBLE;
+  const maxSlide = Math.max(0, visibleJobs.length - VISIBLE);
 
   const calendarStartX = 1059;
   const cellW = 33;
+
+  const selectedDate = useMemo(() => {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + selectedDay);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, [weekStart, selectedDay]);
+
+  const isToday = selectedDate.getTime() === today.getTime();
+  const selYear = selectedDate.getFullYear();
+  const selMonth = selectedDate.getMonth() + 1;
+  const selDate = selectedDate.getDate();
+
+  const scheduleItems = useMemo(() => {
+    const sameDay = (iso: string) => {
+      const d = new Date(iso);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime() === selectedDate.getTime();
+    };
+    const items: {
+      id: string;
+      label: string;
+      kind: 'job' | 'notice';
+      onClick: () => void;
+    }[] = [];
+    for (const j of jobs) {
+      if (!j.deadline || !sameDay(j.deadline)) continue;
+      items.push({
+        id: `job-${j.id}`,
+        label: `${j.company} 마감`,
+        kind: 'job',
+        onClick: () => setSelectedJob(j),
+      });
+    }
+    for (const n of notices) {
+      if (!n.event_date || !sameDay(n.event_date)) continue;
+      items.push({
+        id: `notice-${n.id}`,
+        label: n.title,
+        kind: 'notice',
+        onClick: () => setSelectedNotice(n),
+      });
+    }
+    return items;
+  }, [jobs, notices, selectedDate]);
 
   return (
     <DashboardLayout activePath="/home" sidebarTop={180} fillWidth>
@@ -376,20 +516,26 @@ export default function Home() {
       {/* ── 취업 의뢰 공고 섹션 ── */}
       <div className="jobSection" />
 
-      <button
-        className={`tabBtn tabBtnActive`}
-        onClick={() => setActiveTab('active')}
-        style={{ color: activeTab === 'active' ? '#000' : '#aaa', fontFamily: FONTS.laundry }}
-      >
-        마감 임박 취업 의뢰 공고
-      </button>
-      <button
-        className="tabBtn tabBtnClosed"
-        onClick={() => setActiveTab('closed')}
-        style={{ color: activeTab === 'closed' ? '#000' : '#aaa', fontFamily: FONTS.laundry }}
-      >
-        마감된 취업 의뢰 공고
-      </button>
+      <div role="tablist" aria-label="취업 공고 탭" style={{ display: 'contents' }}>
+        <button
+          role="tab"
+          aria-selected={activeTab === 'active'}
+          className={`tabBtn tabBtnActive`}
+          onClick={() => setActiveTab('active')}
+          style={{ color: activeTab === 'active' ? '#000' : '#aaa', fontFamily: FONTS.laundry }}
+        >
+          마감 임박 취업 의뢰 공고
+        </button>
+        <button
+          role="tab"
+          aria-selected={activeTab === 'closed'}
+          className="tabBtn tabBtnClosed"
+          onClick={() => setActiveTab('closed')}
+          style={{ color: activeTab === 'closed' ? '#000' : '#aaa', fontFamily: FONTS.laundry }}
+        >
+          마감된 취업 의뢰 공고
+        </button>
+      </div>
 
       <div
         className="tabUnderline"
@@ -401,19 +547,42 @@ export default function Home() {
       />
 
       <div className="sliderWrap">
-        <div
-          className="sliderTrack"
-          style={{ gap: CARD_GAP, transform: `translateX(-${slideIndex * (CARD_WIDTH + CARD_GAP)}px)` }}
-        >
-          {JOB_CARDS_DATA.map((card) => (
-            <JobCard
-              key={card.id}
-              card={card}
-              width={CARD_WIDTH}
-              onClick={() => setSelectedJob(card)}
-            />
-          ))}
-        </div>
+        {visibleJobs.length === 0 ? (
+          <div
+            style={{
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#aaa',
+              fontFamily: FONTS.inter,
+              fontSize: 14,
+              textAlign: 'center',
+              padding: 24,
+            }}
+          >
+            {activeTab === 'active'
+              ? '마감 임박 공고가 없습니다.'
+              : '마감된 공고가 없습니다.'}
+          </div>
+        ) : (
+          <div
+            className="sliderTrack"
+            style={{
+              gap: CARD_GAP,
+              transform: `translateX(-${slideIndex * (CARD_WIDTH + CARD_GAP)}px)`,
+            }}
+          >
+            {visibleJobs.map((card) => (
+              <JobCard
+                key={card.id}
+                card={card}
+                width={CARD_WIDTH}
+                onClick={() => setSelectedJob(card)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="dotsWrap">
@@ -444,17 +613,57 @@ export default function Home() {
       <div className="noticeUnderlineThin" style={{ background: COLORS.primary }} />
       <button
         className="noticeMoreBtn"
-        style={{ fontFamily: FONTS.laundry, color: '#aaa' }}
+        onClick={() => navigate('/classroom')}
+        style={{ fontFamily: FONTS.laundry, color: '#aaa', cursor: 'pointer' }}
         onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = COLORS.primary)}
         onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = '#aaa')}
       >
         더보기
       </button>
 
-      {ANNOUNCEMENTS.map((ann, i) => {
+      {announcements.length === 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            left: 262,
+            top: 800,
+            width: 720,
+            color: '#aaa',
+            fontFamily: FONTS.inter,
+            fontSize: 14,
+            textAlign: 'center',
+          }}
+        >
+          아직 등록된 공지가 없습니다.
+        </div>
+      )}
+
+      {announcements.map((ann, i) => {
         const y = 773 + i * 31;
+        const full = notices.find((n) => n.id === ann.id) ?? null;
         return (
-          <div key={ann.id}>
+          <div
+            key={ann.id}
+            onClick={() => full && setSelectedNotice(full)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if ((e.key === 'Enter' || e.key === ' ') && full) {
+                e.preventDefault();
+                setSelectedNotice(full);
+              }
+            }}
+            onMouseEnter={(e) =>
+              ((e.currentTarget as HTMLElement).style.background = 'rgba(253,203,53,0.08)')
+            }
+            onMouseLeave={(e) =>
+              ((e.currentTarget as HTMLElement).style.background = 'transparent')
+            }
+            style={{
+              cursor: 'pointer',
+              transition: 'background 0.15s',
+            }}
+          >
             <div className="noticeRow" style={{ top: y, fontFamily: FONTS.inter }}>
               {ann.text}
             </div>
@@ -468,12 +677,106 @@ export default function Home() {
       {/* ── 달력 / 일정 섹션 ── */}
       <div className="calendarSection" />
 
-      <div key={selectedDay} className="calendarHeader" style={{ fontFamily: FONTS.laundry }}>
-        오늘, {DAY_LABELS_KO[selectedDay]}! 야르!
+      <div key={`${weekOffset}-${selectedDay}`} className="calendarHeader" style={{ fontFamily: FONTS.laundry }}>
+        {isToday
+          ? `오늘, ${DAY_LABELS_KO[selectedDay]}! 야르!`
+          : `${DAY_LABELS_KO[selectedDay]}! 야르!`}
       </div>
       <div className="calendarSubDate" style={{ fontFamily: FONTS.inter, color: COLORS.subtleGray }}>
-        {`${year}년 ${month}월 ${date}일`}
+        {`${selYear}년 ${selMonth}월 ${selDate}일`}
       </div>
+
+      <button
+        aria-label="이전 주"
+        onClick={() => setWeekOffset((v) => v - 1)}
+        style={{
+          position: 'absolute',
+          left: 1338,
+          top: 215,
+          width: 26,
+          height: 26,
+          borderRadius: '50%',
+          border: 'none',
+          background: 'rgba(0,0,0,0.04)',
+          color: COLORS.subtleGray,
+          cursor: 'pointer',
+          fontFamily: FONTS.inter,
+          fontSize: 14,
+          fontWeight: 700,
+          lineHeight: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'background 0.15s, color 0.15s',
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLElement).style.background = COLORS.primary;
+          (e.currentTarget as HTMLElement).style.color = '#fff';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.04)';
+          (e.currentTarget as HTMLElement).style.color = COLORS.subtleGray;
+        }}
+      >
+        ‹
+      </button>
+      <button
+        aria-label="다음 주"
+        onClick={() => setWeekOffset((v) => v + 1)}
+        style={{
+          position: 'absolute',
+          left: 1370,
+          top: 215,
+          width: 26,
+          height: 26,
+          borderRadius: '50%',
+          border: 'none',
+          background: 'rgba(0,0,0,0.04)',
+          color: COLORS.subtleGray,
+          cursor: 'pointer',
+          fontFamily: FONTS.inter,
+          fontSize: 14,
+          fontWeight: 700,
+          lineHeight: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'background 0.15s, color 0.15s',
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLElement).style.background = COLORS.primary;
+          (e.currentTarget as HTMLElement).style.color = '#fff';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.04)';
+          (e.currentTarget as HTMLElement).style.color = COLORS.subtleGray;
+        }}
+      >
+        ›
+      </button>
+      {weekOffset !== 0 && (
+        <button
+          onClick={() => setWeekOffset(0)}
+          style={{
+            position: 'absolute',
+            left: 1300,
+            top: 237,
+            padding: '2px 8px',
+            borderRadius: 10,
+            border: `1px solid ${COLORS.primary}`,
+            background: 'transparent',
+            color: COLORS.primary,
+            cursor: 'pointer',
+            fontFamily: FONTS.inter,
+            fontSize: 10,
+            fontWeight: 600,
+            lineHeight: 1.3,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          이번 주로
+        </button>
+      )}
 
       {DAYS.map((d, i) => (
         <div
@@ -510,46 +813,74 @@ export default function Home() {
 
       <div className="calendarDivider" style={{ background: COLORS.primary }} />
 
-      {SCHEDULE_ITEMS.map((item, i) => {
-        const y = 365 + i * 36;
-        return (
-          <div key={i}>
-            <div
-              className="scheduleDot"
-              style={{
-                top: y + 8,
-                background: item.highlight ? COLORS.primary : COLORS.dotGray,
-                border: `1px solid ${COLORS.dotGray}`,
-              }}
-            />
-            {i < SCHEDULE_ITEMS.length - 1 && (
-              <div className="scheduleLine" style={{ top: y + 16, background: COLORS.dotGray }} />
-            )}
-            <div
-              className="scheduleLabel"
-              style={{
-                top: y,
-                fontFamily: FONTS.pretendard,
-                color: item.highlight ? COLORS.primary : COLORS.scheduleGray,
-              }}
-              onMouseEnter={(e) => {
-                if (!item.highlight) (e.currentTarget as HTMLElement).style.color = COLORS.primary;
-              }}
-              onMouseLeave={(e) => {
-                if (!item.highlight) (e.currentTarget as HTMLElement).style.color = COLORS.scheduleGray;
-              }}
-            >
-              {item.label}
+      {scheduleItems.length === 0 ? (
+        <div
+          style={{
+            position: 'absolute',
+            left: 1059,
+            top: 365,
+            width: 340,
+            color: '#aaa',
+            fontFamily: FONTS.inter,
+            fontSize: 13,
+          }}
+        >
+          이 날에 등록된 일정이 없어요.
+        </div>
+      ) : (
+        scheduleItems.map((item, i) => {
+          const y = 365 + i * 36;
+          const accent = item.kind === 'job' ? COLORS.primary : '#4CAF50';
+          return (
+            <div key={item.id} onClick={item.onClick} style={{ cursor: 'pointer' }}>
+              <div
+                className="scheduleDot"
+                style={{
+                  top: y + 8,
+                  background: accent,
+                  border: `1px solid ${accent}`,
+                }}
+              />
+              {i < scheduleItems.length - 1 && (
+                <div className="scheduleLine" style={{ top: y + 16, background: COLORS.dotGray }} />
+              )}
+              <div
+                className="scheduleLabel"
+                style={{
+                  top: y,
+                  fontFamily: FONTS.pretendard,
+                  color: accent,
+                  fontWeight: 700,
+                }}
+              >
+                {item.label}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })
+      )}
 
-      {/* ── 급식 섹션 (빈 칸) ── */}
-      <div className="mealSection" />
+      {/* ── 급식 + 시간표 탭 ── */}
+      <SchoolTabs
+        grade="3"
+        classNm="1"
+        style={{
+          position: 'absolute',
+          left: 1034,
+          top: 657,
+          width: 370,
+          minHeight: 280,
+        }}
+      />
 
       {selectedJob && (
         <JobDetailModal job={selectedJob} onClose={() => setSelectedJob(null)} />
+      )}
+      {selectedNotice && (
+        <NoticeDetailModal
+          notice={selectedNotice}
+          onClose={() => setSelectedNotice(null)}
+        />
       )}
     </DashboardLayout>
   );

@@ -2,11 +2,18 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import PsyduckFace from '../components/PsyduckFace';
 import { useScaledViewport } from '../hooks/useScaledViewport';
+import { useIsMobile } from '../hooks/useIsMobile';
 import { COLORS, FONTS, DESIGN } from '../constants';
 import { login } from '../api/auth';
+import { getMyProfile } from '../api/profiles';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 export default function Login() {
   const navigate = useNavigate();
+  const { applySession } = useAuth();
+  const toast = useToast();
+  const isMobile = useIsMobile();
   const { scale, offsetX } = useScaledViewport();
   const [splitY, setSplitY] = useState(453);
   const [email, setEmail] = useState('');
@@ -22,30 +29,155 @@ export default function Login() {
     setSubmitting(true);
     try {
       const res = await login(email, password);
-      if (res.session?.access_token) {
-        localStorage.setItem('access_token', res.session.access_token);
+      if (!res.session?.access_token || !res.user?.id) {
+        throw new Error('로그인 응답이 올바르지 않습니다.');
       }
-      if (res.user?.id) localStorage.setItem('user_id', res.user.id);
-      const metaRole =
-        (res.user?.user_metadata as { role?: string } | undefined)?.role;
-      const metaName =
-        (res.user?.user_metadata as { name?: string } | undefined)?.name;
-      if (metaRole && !localStorage.getItem('user_role')) {
-        localStorage.setItem(
-          'user_role',
-          metaRole === 'teacher' ? 'teacher' : 'student',
-        );
-      }
-      if (metaName && !localStorage.getItem('user_name')) {
-        localStorage.setItem('user_name', metaName);
-      }
-      navigate('/home');
+      await applySession(
+        res.session.access_token,
+        res.user.id,
+        res.session.refresh_token,
+      );
+      const profile = await getMyProfile().catch(() => null);
+      const isTeacher =
+        profile?.role === 'teacher' || profile?.role === 'admin';
+      toast.success('로그인 성공!');
+      navigate(isTeacher ? '/manage' : '/home');
     } catch (e) {
-      setError(e instanceof Error ? e.message : '로그인 실패');
+      const msg = e instanceof Error ? e.message : '로그인 실패';
+      if (/not\s*confirmed|confirm\s*email|email\s*not/i.test(msg)) {
+        setError('이메일 인증이 완료되지 않았습니다. 메일함을 확인해주세요.');
+      } else {
+        setError(msg);
+      }
     } finally {
       setSubmitting(false);
     }
   };
+
+  if (isMobile) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          background: COLORS.primary,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: '40px 20px 32px',
+        }}
+      >
+        <PsyduckFace width={140} height={120} />
+        <div
+          style={{
+            fontFamily: FONTS.laundry,
+            fontSize: 32,
+            fontWeight: 700,
+            color: COLORS.black,
+            marginTop: 12,
+            marginBottom: 24,
+          }}
+        >
+          로그인
+        </div>
+        <div
+          style={{
+            background: COLORS.white,
+            width: '100%',
+            maxWidth: 420,
+            padding: 24,
+            borderRadius: 20,
+            boxShadow: '0 18px 40px rgba(0,0,0,0.12)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 12,
+          }}
+        >
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span style={{ fontSize: 13, color: COLORS.subtleGray, fontFamily: FONTS.laundry }}>
+              이메일
+            </span>
+            <input
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }}
+              placeholder="name@e-mirim.hs.kr"
+              style={{
+                height: 48,
+                padding: '0 14px',
+                border: `2px solid ${COLORS.primary}`,
+                borderRadius: 10,
+                fontSize: 16,
+                fontFamily: FONTS.laundry,
+                outline: 'none',
+              }}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span style={{ fontSize: 13, color: COLORS.subtleGray, fontFamily: FONTS.laundry }}>
+              비밀번호
+            </span>
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }}
+              style={{
+                height: 48,
+                padding: '0 14px',
+                border: `2px solid ${COLORS.primary}`,
+                borderRadius: 10,
+                fontSize: 16,
+                fontFamily: FONTS.laundry,
+                outline: 'none',
+              }}
+            />
+          </label>
+          {error && (
+            <div style={{ color: '#d33', fontSize: 14, fontFamily: FONTS.laundry, textAlign: 'center' }}>
+              {error}
+            </div>
+          )}
+          <button
+            onClick={handleLogin}
+            disabled={submitting}
+            style={{
+              height: 52,
+              borderRadius: 10,
+              border: 'none',
+              background: COLORS.primary,
+              color: COLORS.black,
+              fontFamily: FONTS.laundry,
+              fontSize: 18,
+              fontWeight: 700,
+              cursor: submitting ? 'default' : 'pointer',
+              opacity: submitting ? 0.6 : 1,
+              marginTop: 4,
+            }}
+          >
+            {submitting ? '로그인 중...' : '로그인'}
+          </button>
+          <button
+            onClick={() => navigate('/signup')}
+            style={{
+              height: 44,
+              border: 'none',
+              background: 'transparent',
+              color: COLORS.subtleGray,
+              fontFamily: FONTS.laundry,
+              fontSize: 14,
+              cursor: 'pointer',
+            }}
+          >
+            아직 계정이 없어요 · 회원가입하러 가기
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-screen h-screen overflow-hidden relative">
@@ -67,14 +199,15 @@ export default function Login() {
             <svg width="33" height="35" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 mr-4">
               <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill={COLORS.primary} />
             </svg>
-            <input type="email" placeholder="이메일을 입력해주세용"
+            <input type="email" placeholder="이메일"
               value={email} onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }}
               className="flex-1 border-none outline-none bg-transparent text-center"
               style={{ fontSize: 20, fontFamily: FONTS.laundry, color: COLORS.placeholder }} />
           </div>
           <div className="absolute bg-white border-[3px] border-[#FDCB35] rounded-[5px] flex items-center justify-center"
             style={{ left: 340, top: 720, width: 759, height: 73, padding: '0 23px' }}>
-            <input type="password" placeholder="비밀번호 ㄱ "
+            <input type="password" placeholder="비밀번호"
               value={password} onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }}
               className="flex-1 border-none outline-none bg-transparent text-center"

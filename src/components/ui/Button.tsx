@@ -57,10 +57,17 @@ export default function Button({
         alignItems: 'center',
         justifyContent: 'center',
         width: fullWidth ? '100%' : undefined,
-        transition: 'background 0.15s, transform 0.15s, opacity 0.15s',
+        transition: 'background 0.15s, transform 0.15s, opacity 0.15s, box-shadow 0.15s',
+        outline: 'none',
         ...VARIANT_STYLES[variant],
         ...SIZE_STYLES[size],
         ...style,
+      }}
+      onFocus={(e) => {
+        (e.currentTarget as HTMLElement).style.boxShadow = `0 0 0 3px ${colors.primarySoft}`;
+      }}
+      onBlur={(e) => {
+        (e.currentTarget as HTMLElement).style.boxShadow = '';
       }}
       {...rest}
     >

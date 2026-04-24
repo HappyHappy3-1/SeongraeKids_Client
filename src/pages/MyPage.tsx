@@ -1,20 +1,22 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout';
-import PdfSlideViewer from '../components/PdfSlideViewer';
+import PortfolioThumbnail from '../components/PortfolioThumbnail';
+import FeedbackThread from '../components/FeedbackThread';
 import { Button, Card } from '../components/ui';
 import { colors, fonts, radii, shadows, space } from '../design/tokens';
-import { ROLE_LABELS, toBackendRole, type UserRole } from '../constants';
+import { ROLE_LABELS } from '../constants';
+import { useAuth } from '../context/AuthContext';
 import { setMyRole } from '../api/auth';
+
+const PdfSlideViewer = lazy(() => import('../components/PdfSlideViewer'));
 import {
   getAllPortfolios,
+  getCachedSignedUrl,
   getMyPortfolios,
-  getPortfolioDownloadUrl,
   uploadMyPortfolio,
   type PortfolioItem,
 } from '../api/portfolio';
-
-const FEEDBACK_TEXT = '빨리 정신으로 해주세요 디자인 정확했어요 ㅜㅜ';
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -29,39 +31,16 @@ function formatDate(iso: string): string {
   ).padStart(2, '0')}`;
 }
 
-function PdfThumb() {
-  return (
-    <svg width="28" height="34" viewBox="0 0 28 34" fill="none" aria-hidden>
-      <path
-        d="M4 2C2.9 2 2 2.9 2 4V30C2 31.1 2.9 32 4 32H24C25.1 32 26 31.1 26 30V10L18 2H4Z"
-        fill={colors.primarySoft}
-        stroke={colors.primaryDark}
-        strokeWidth="1.5"
-      />
-      <path d="M18 2V10H26" stroke={colors.primaryDark} strokeWidth="1.5" fill="none" />
-      <text
-        x="14"
-        y="24"
-        textAnchor="middle"
-        fontFamily="Inter, sans-serif"
-        fontSize="7"
-        fontWeight="700"
-        fill={colors.primaryDark}
-      >
-        PDF
-      </text>
-    </svg>
-  );
-}
-
 function PortfolioCard({
   item,
   studentLabel,
+  resolveUrl,
   onPreview,
   onDownload,
 }: {
   item: PortfolioItem;
   studentLabel?: string;
+  resolveUrl: (item: PortfolioItem) => Promise<string>;
   onPreview: (item: PortfolioItem) => void;
   onDownload: (item: PortfolioItem) => void;
 }) {
@@ -71,11 +50,12 @@ function PortfolioCard({
       radius="xl"
       elevated
       style={{
-        padding: space[4],
+        padding: space[3],
         display: 'flex',
         flexDirection: 'column',
         gap: space[3],
         transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+        cursor: 'pointer',
       }}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
@@ -85,60 +65,49 @@ function PortfolioCard({
         (e.currentTarget as HTMLElement).style.transform = 'none';
         (e.currentTarget as HTMLElement).style.boxShadow = shadows.card;
       }}
+      onClick={() => onPreview(item)}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: space[3] }}>
+      <PortfolioThumbnail
+        portfolioId={item.id}
+        resolveUrl={() => resolveUrl(item)}
+      />
+      <div style={{ minWidth: 0 }}>
         <div
           style={{
-            width: 52,
-            height: 60,
-            borderRadius: radii.md,
-            background: colors.primarySoft,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
+            fontFamily: fonts.family.pretendard,
+            fontWeight: fonts.weight.semibold,
+            fontSize: fonts.size.md,
+            color: colors.text.primary,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
           }}
+          title={item.originalName}
         >
-          <PdfThumb />
+          {item.originalName}
         </div>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div
-            style={{
-              fontFamily: fonts.family.pretendard,
-              fontWeight: fonts.weight.semibold,
-              fontSize: fonts.size.md,
-              color: colors.text.primary,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-            title={item.originalName}
-          >
-            {item.originalName}
-          </div>
-          {studentLabel && (
-            <div
-              style={{
-                fontFamily: fonts.family.inter,
-                fontSize: fonts.size.xs,
-                color: colors.primaryDark,
-                fontWeight: fonts.weight.semibold,
-                marginTop: 3,
-              }}
-            >
-              {studentLabel}
-            </div>
-          )}
+        {studentLabel && (
           <div
             style={{
               fontFamily: fonts.family.inter,
               fontSize: fonts.size.xs,
-              color: colors.text.secondary,
-              marginTop: 4,
+              color: colors.primaryDark,
+              fontWeight: fonts.weight.semibold,
+              marginTop: 3,
             }}
           >
-            {formatBytes(item.size)} · {formatDate(item.uploadedAt)}
+            {studentLabel}
           </div>
+        )}
+        <div
+          style={{
+            fontFamily: fonts.family.inter,
+            fontSize: fonts.size.xs,
+            color: colors.text.secondary,
+            marginTop: 4,
+          }}
+        >
+          {formatBytes(item.size)} · {formatDate(item.uploadedAt)}
         </div>
       </div>
       <div style={{ display: 'flex', gap: space[2] }}>
@@ -146,7 +115,10 @@ function PortfolioCard({
           variant="primary"
           size="sm"
           fullWidth
-          onClick={() => onPreview(item)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onPreview(item);
+          }}
           style={{ fontSize: fonts.size.base }}
         >
           슬라이드 보기
@@ -154,7 +126,10 @@ function PortfolioCard({
         <Button
           variant="secondary"
           size="sm"
-          onClick={() => onDownload(item)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDownload(item);
+          }}
           style={{ fontSize: fonts.size.base, padding: `0 14px` }}
         >
           ↓
@@ -166,13 +141,9 @@ function PortfolioCard({
 
 export default function MyPage() {
   const navigate = useNavigate();
+  const { name: userName, role: authRole, isTeacher, email, logout } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const userName = typeof window !== 'undefined' ? localStorage.getItem('user_name') ?? '' : '';
-  const role =
-    (typeof window !== 'undefined'
-      ? (localStorage.getItem('user_role') as UserRole | null)
-      : null) ?? 'student';
-  const isTeacher = role === 'teacher';
+  const role = authRole ?? 'student';
 
   const [items, setItems] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -182,10 +153,7 @@ export default function MyPage() {
   const [previewTitle, setPreviewTitle] = useState<string>('');
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user_id');
-    localStorage.removeItem('user_role');
-    localStorage.removeItem('user_name');
+    logout();
     navigate('/login');
   };
 
@@ -202,7 +170,7 @@ export default function MyPage() {
         (msg.includes('role was not found') || msg.includes('role is missing'));
       if (roleNotFound) {
         try {
-          await setMyRole(toBackendRole(role));
+          await setMyRole(role);
           await loadItems(true);
           return;
         } catch (innerErr) {
@@ -221,18 +189,30 @@ export default function MyPage() {
   };
 
   useEffect(() => {
+    if (isTeacher) return;
     void loadItems();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTeacher]);
 
+  useEffect(() => {
+    void Promise.all([
+      import('pdfjs-dist'),
+      import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
+      import('../components/PdfSlideViewer'),
+    ]);
+  }, []);
+
   const handleSelectFile = () => fileInputRef.current?.click();
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
+  const MAX_UPLOAD_MB = 50;
+
+  const uploadFile = async (file: File) => {
     if (file.type !== 'application/pdf') {
       setError('PDF 파일만 업로드 가능합니다.');
+      return;
+    }
+    if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+      setError(`파일 크기가 ${MAX_UPLOAD_MB}MB를 초과합니다.`);
       return;
     }
     setUploading(true);
@@ -247,9 +227,18 @@ export default function MyPage() {
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    await uploadFile(file);
+  };
+
+  const [dragActive, setDragActive] = useState(false);
+
   const openPreview = async (item: PortfolioItem) => {
     try {
-      const { url } = await getPortfolioDownloadUrl(item.id);
+      const url = await getCachedSignedUrl(item.id);
       setPreviewUrl(url);
       setPreviewTitle(item.originalName);
     } catch (err) {
@@ -259,7 +248,7 @@ export default function MyPage() {
 
   const handleDownload = async (item: PortfolioItem) => {
     try {
-      const { url } = await getPortfolioDownloadUrl(item.id);
+      const url = await getCachedSignedUrl(item.id);
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch (err) {
       setError(err instanceof Error ? err.message : '다운로드 링크 생성 실패');
@@ -268,6 +257,138 @@ export default function MyPage() {
 
   const PAGE_X = 200;
   const CONTENT_WIDTH = 1180;
+
+  if (isTeacher) {
+    return (
+      <DashboardLayout activePath="/mypage" sidebarTop={180} fillWidth>
+        <div style={{ position: 'absolute', left: PAGE_X, top: 148 }}>
+          <div
+            style={{
+              fontFamily: fonts.family.inter,
+              fontSize: fonts.size.md,
+              color: colors.primaryDark,
+              fontWeight: fonts.weight.medium,
+            }}
+          >
+            내 프로필
+          </div>
+          <div
+            style={{
+              fontFamily: fonts.family.laundry,
+              fontSize: fonts.size['3xl'],
+              color: colors.text.primary,
+              fontWeight: fonts.weight.bold,
+              marginTop: 6,
+            }}
+          >
+            {userName ? `${userName}선생님 하이~` : '마이페이지'}
+          </div>
+        </div>
+
+        <Card
+          variant="surface"
+          radius="xl"
+          elevated
+          style={{
+            position: 'absolute',
+            left: PAGE_X,
+            top: 260,
+            width: 620,
+            padding: space[6],
+            display: 'flex',
+            flexDirection: 'column',
+            gap: space[4],
+          }}
+        >
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: space[2],
+              padding: '6px 14px',
+              background: colors.primarySoft,
+              color: colors.primaryDark,
+              borderRadius: radii.full,
+              fontFamily: fonts.family.inter,
+              fontSize: fonts.size.sm,
+              fontWeight: fonts.weight.semibold,
+              alignSelf: 'flex-start',
+            }}
+          >
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: radii.full,
+                background: colors.primary,
+              }}
+            />
+            {ROLE_LABELS[role] ?? role}
+          </div>
+          <div>
+            <div
+              style={{
+                fontFamily: fonts.family.inter,
+                fontSize: fonts.size.xs,
+                color: colors.text.secondary,
+                marginBottom: 4,
+              }}
+            >
+              이름
+            </div>
+            <div
+              style={{
+                fontFamily: fonts.family.laundry,
+                fontSize: fonts.size.xl,
+                fontWeight: fonts.weight.bold,
+                color: colors.text.primary,
+              }}
+            >
+              {userName || '—'}
+            </div>
+          </div>
+          <div>
+            <div
+              style={{
+                fontFamily: fonts.family.inter,
+                fontSize: fonts.size.xs,
+                color: colors.text.secondary,
+                marginBottom: 4,
+              }}
+            >
+              이메일
+            </div>
+            <div
+              style={{
+                fontFamily: fonts.family.inter,
+                fontSize: fonts.size.md,
+                color: colors.text.primary,
+              }}
+            >
+              {email || '—'}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: space[2], marginTop: space[2] }}>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => navigate('/manage')}
+            >
+              학생 관리로 이동
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleLogout}
+              style={{ color: colors.state.danger, borderColor: colors.state.danger }}
+            >
+              로그아웃
+            </Button>
+          </div>
+        </Card>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout activePath="/mypage" sidebarTop={180} fillWidth>
@@ -506,15 +627,36 @@ export default function MyPage() {
         <button
           onClick={handleSelectFile}
           disabled={uploading}
+          onDragEnter={(e) => {
+            e.preventDefault();
+            if (!uploading) setDragActive(true);
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            if (!uploading) setDragActive(true);
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            setDragActive(false);
+          }}
+          onDrop={async (e) => {
+            e.preventDefault();
+            setDragActive(false);
+            if (uploading) return;
+            const file = e.dataTransfer.files?.[0];
+            if (file) await uploadFile(file);
+          }}
           style={{
             position: 'absolute',
             left: PAGE_X,
             top: 372,
             width: CONTENT_WIDTH,
             height: 128,
-            border: `2px dashed ${colors.border.strong}`,
+            border: `2px dashed ${dragActive ? colors.primary : colors.border.strong}`,
             borderRadius: radii.xl,
-            background: `linear-gradient(180deg, ${colors.primarySoft} 0%, rgba(253,203,53,0.06) 100%)`,
+            background: dragActive
+              ? `linear-gradient(180deg, #FFEEB5 0%, ${colors.primarySoft} 100%)`
+              : `linear-gradient(180deg, ${colors.primarySoft} 0%, rgba(253,203,53,0.06) 100%)`,
             cursor: uploading ? 'not-allowed' : 'pointer',
             display: 'flex',
             flexDirection: 'column',
@@ -526,14 +668,16 @@ export default function MyPage() {
             fontFamily: fonts.family.inter,
           }}
           onMouseEnter={(e) => {
-            if (!uploading) {
+            if (!uploading && !dragActive) {
               (e.currentTarget as HTMLElement).style.background =
                 `linear-gradient(180deg, #FFEEB5 0%, ${colors.primarySoft} 100%)`;
             }
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.background =
-              `linear-gradient(180deg, ${colors.primarySoft} 0%, rgba(253,203,53,0.06) 100%)`;
+            if (!dragActive) {
+              (e.currentTarget as HTMLElement).style.background =
+                `linear-gradient(180deg, ${colors.primarySoft} 0%, rgba(253,203,53,0.06) 100%)`;
+            }
           }}
         >
           <div
@@ -560,10 +704,14 @@ export default function MyPage() {
               color: colors.text.primary,
             }}
           >
-            {uploading ? '업로드 중...' : '포트폴리오 PDF 업로드'}
+            {uploading
+              ? '업로드 중...'
+              : dragActive
+                ? '여기에 놓아주세요'
+                : '포트폴리오 PDF 업로드'}
           </div>
           <div style={{ fontSize: fonts.size.sm, color: colors.text.secondary }}>
-            클릭해서 파일 선택 · application/pdf 전용 · 최대 20MB
+            클릭하거나 파일을 끌어다 놓기 · PDF 전용 · 최대 {MAX_UPLOAD_MB}MB
           </div>
         </button>
       )}
@@ -652,6 +800,7 @@ export default function MyPage() {
                 key={item.id}
                 item={item}
                 studentLabel={isTeacher ? `학생 · ${item.studentId.slice(0, 8)}` : undefined}
+                resolveUrl={(it) => getCachedSignedUrl(it.id)}
                 onPreview={openPreview}
                 onDownload={handleDownload}
               />
@@ -678,32 +827,73 @@ export default function MyPage() {
               marginBottom: space[3],
             }}
           >
-            성래쌤의 피드백
+            선생님 피드백
           </div>
-          <Card
-            variant="surface"
-            radius="xl"
-            elevated
-            style={{
-              padding: space[5],
-              fontFamily: fonts.family.inter,
-              fontSize: fonts.size.md,
-              color: colors.text.primary,
-              lineHeight: 1.55,
-              borderLeft: `4px solid ${colors.primary}`,
-            }}
-          >
-            {FEEDBACK_TEXT}
-          </Card>
+          {items.length === 0 ? (
+            <Card
+              variant="surface"
+              radius="xl"
+              style={{
+                padding: space[5],
+                textAlign: 'center',
+                color: colors.text.secondary,
+                fontFamily: fonts.family.inter,
+                fontSize: fonts.size.sm,
+              }}
+            >
+              포트폴리오를 업로드하면 선생님이 남긴 피드백을 확인할 수 있어요.
+            </Card>
+          ) : (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: space[4],
+              }}
+            >
+              {items.map((it) => (
+                <Card
+                  key={it.id}
+                  variant="surface"
+                  radius="xl"
+                  elevated
+                  style={{
+                    padding: space[4],
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: space[3],
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: fonts.family.pretendard,
+                      fontSize: fonts.size.md,
+                      fontWeight: fonts.weight.semibold,
+                      color: colors.text.primary,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                    title={it.originalName}
+                  >
+                    {it.originalName}
+                  </div>
+                  <FeedbackThread portfolioId={it.id} canWrite={false} compact />
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {previewUrl && (
-        <PdfSlideViewer
-          url={previewUrl}
-          title={previewTitle}
-          onClose={() => setPreviewUrl(null)}
-        />
+        <Suspense fallback={null}>
+          <PdfSlideViewer
+            url={previewUrl}
+            title={previewTitle}
+            onClose={() => setPreviewUrl(null)}
+          />
+        </Suspense>
       )}
     </DashboardLayout>
   );

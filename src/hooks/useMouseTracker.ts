@@ -47,29 +47,39 @@ export function useMouseTracker(): TrackerResult {
     return { x: eye.x + (dx / d) * offset, y: eye.y + (dy / d) * offset };
   }, []);
 
+  const rafRef = useRef<number | null>(null);
+  const lastEventRef = useRef<{ x: number; y: number } | null>(null);
+
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    const mx = (e.clientX - rect.left) * (620 / rect.width);
-    const my = (e.clientY - rect.top) * (500 / rect.height);
-    const dx = mx - VIEW_CENTER.x;
-    const dy = my - VIEW_CENTER.y;
-    const d = Math.sqrt(dx * dx + dy * dy);
-
-    if (d > 0) {
-      const fs = Math.min(d * 0.02, 8);
-      setFaceOffset({ x: (dx / d) * fs, y: (dy / d) * fs * 0.5, rotate: (dx / d) * Math.min(d * 0.008, 3) });
-      const es = Math.min(d * 0.025, 10);
-      setEyeOffset({ x: (dx / d) * es, y: (dy / d) * es * 0.6 });
-    }
-
-    setLeftPupil(calcPupil(LEFT_EYE, mx, my));
-    setRightPupil(calcPupil(RIGHT_EYE, mx, my));
+    lastEventRef.current = { x: e.clientX, y: e.clientY };
+    if (rafRef.current != null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const ev = lastEventRef.current;
+      if (!ev || !ref.current) return;
+      const rect = ref.current.getBoundingClientRect();
+      const mx = (ev.x - rect.left) * (620 / rect.width);
+      const my = (ev.y - rect.top) * (500 / rect.height);
+      const dx = mx - VIEW_CENTER.x;
+      const dy = my - VIEW_CENTER.y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d > 0) {
+        const fs = Math.min(d * 0.02, 8);
+        setFaceOffset({ x: (dx / d) * fs, y: (dy / d) * fs * 0.5, rotate: (dx / d) * Math.min(d * 0.008, 3) });
+        const es = Math.min(d * 0.025, 10);
+        setEyeOffset({ x: (dx / d) * es, y: (dy / d) * es * 0.6 });
+      }
+      setLeftPupil(calcPupil(LEFT_EYE, mx, my));
+      setRightPupil(calcPupil(RIGHT_EYE, mx, my));
+    });
   }, [calcPupil]);
 
   useEffect(() => {
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    };
   }, [handleMouseMove]);
 
   return { ref, faceOffset, eyeOffset, leftPupil, rightPupil, blinking };

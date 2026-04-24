@@ -1,5 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { SIDEBAR_ITEMS } from '../constants';
+import {
+  STUDENT_SIDEBAR_ITEMS,
+  TEACHER_SIDEBAR_ITEMS,
+} from '../constants';
+import { useAuth } from '../context/AuthContext';
 import { colors, fonts, radii, shadows, filters, motion } from '../design/tokens';
 
 interface SidebarItemProps {
@@ -79,6 +83,17 @@ export default function Sidebar({
   height = 503,
 }: SidebarProps) {
   const navigate = useNavigate();
+  const { isTeacher } = useAuth();
+  const items = isTeacher ? TEACHER_SIDEBAR_ITEMS : STUDENT_SIDEBAR_ITEMS;
+  const activeItemPath = (() => {
+    let best: string | null = null;
+    for (const it of items) {
+      const match =
+        activePath === it.path || activePath.startsWith(it.path + '/');
+      if (match && (!best || it.path.length > best.length)) best = it.path;
+    }
+    return best;
+  })();
   return (
     <nav
       aria-label="Primary"
@@ -98,13 +113,13 @@ export default function Sidebar({
         padding: '12px 0',
       }}
     >
-      {SIDEBAR_ITEMS.map((item) => (
+      {items.map((item) => (
         <SidebarItem
           key={item.path}
           icon={item.icon}
           label={item.label}
           path={item.path}
-          isActive={activePath === item.path}
+          isActive={activeItemPath === item.path}
           onNav={navigate}
         />
       ))}

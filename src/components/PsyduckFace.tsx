@@ -41,11 +41,12 @@ export default function PsyduckFace({ width, height, style, className, showHair 
                 animate={{ scaleY: eyeScaleY }} transition={{ duration: 0.1 }}
                 style={{ transformOrigin: `${eye.x}px ${eye.y}px` }} />
               {!blinking && (
-                <motion.circle r="11.5" fill="black"
+                <circle
+                  r="11.5"
+                  fill="black"
                   cx={pupil?.x ?? eye.x}
                   cy={pupil?.y ?? eye.y}
-                  animate={{ cx: pupil?.x ?? eye.x, cy: pupil?.y ?? eye.y }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 20 }} />
+                />
               )}
             </g>
           ))}

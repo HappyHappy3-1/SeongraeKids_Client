@@ -18,6 +18,7 @@ export interface AuthUser {
 export interface AuthResponse {
   user: AuthUser | null;
   session: AuthSession | null;
+  requiresEmailConfirm?: boolean;
 }
 
 export function login(email: string, password: string) {
@@ -36,6 +37,13 @@ export function signUp(
   return apiFetch<AuthResponse>('/auth/signup', {
     method: 'POST',
     body: JSON.stringify({ email, password, name, role }),
+  });
+}
+
+export function resendConfirmation(email: string) {
+  return apiFetch<{ ok: true }>('/auth/resend-confirmation', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
   });
 }
 
